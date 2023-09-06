@@ -1,27 +1,34 @@
 import {NextApiRequest, NextApiResponse} from "next";
-import {getServerSession} from "next-auth";
-import {authOptions} from "@/pages/api/auth/[...nextauth]";
+import { verifyJWT } from "@/lib/jwt";
+import { prisma } from "@/lib/prisma";
 
 const handleGet = async (req: NextApiRequest, res: NextApiResponse) => {
-  const session = await getServerSession(req, res, authOptions);
-  if (!session?.user?.id) {
-    res.status(401).json({message: "Unauthorized"});
+  const token = req.headers['authorization'] || req.cookies['jwt_token'];
+  let decoded: any;
+
+  try {
+    if(token)
+    {
+      decoded = await verifyJWT(token);
+    }
+  } catch (e) {
+    res.status(401).json({ message: "Unauthorized: Invalid token" });
     return;
   }
 
   try {
-    const indexes = await prisma?.index.findMany({
+    const indexes = await prisma.index.findMany({
       where: {
         likes: {
           some: {
-            userId: session?.user?.id as string,
+            userId: decoded.id as string,  // Use the user ID from the decoded JWT payload
           }
         }
       },
       include: {
         likes: {
           where: {
-            userId: session?.user?.id as string,
+            userId: decoded.id as string,  // Use the user ID from the decoded JWT payload
           }
         },
         author: {
@@ -38,23 +45,30 @@ const handleGet = async (req: NextApiRequest, res: NextApiResponse) => {
 
     res.status(200).json(indexes);
   } catch (e) {
-    res.status(500).json({message: (e as Error).message});
+    res.status(500).json({ message: (e as Error).message });
   }
-}
+};
+
 
 const handlePost = async (req: NextApiRequest, res: NextApiResponse) => {
-  const session = await getServerSession(req, res, authOptions);
-  const {indexId} = req.body;
+  const token = req.headers['authorization'] || req.cookies['jwt_token'];
+  let decoded: any;
 
-  if (!session?.user?.id) {
-    res.status(401).json({message: "Unauthorized"});
+  try {
+    if(token)
+    {
+      decoded = await verifyJWT(token);
+    }
+  } catch (e) {
+    res.status(401).json({ message: "Unauthorized: Invalid token" });
     return;
   }
+  const {indexId} = req.body;
 
   try {
     const createdData = await prisma?.like.create({
       data: {
-        userId: session?.user?.id as string,
+        userId: decoded.id as string,
         indexId: indexId as string,
       }
     });
@@ -71,18 +85,28 @@ const handlePost = async (req: NextApiRequest, res: NextApiResponse) => {
 }
 
 const handleDelete = async (req: NextApiRequest, res: NextApiResponse) => {
-  const session = await getServerSession(req, res, authOptions);
-  const {indexId} = req.body;
+  const token = req.headers['authorization'] || req.cookies['jwt_token'];
+  let decoded: any;
 
-  if (!session?.user?.id) {
-    res.status(401).json({message: "Unauthorized"});
+  try {
+    if(token)
+    {
+      decoded = await verifyJWT(token);
+    }
+  } catch (e) {
+    res.status(401).json({ message: "Unauthorized: Invalid token" });
     return;
   }
+
+  const {indexId} = req.body;
+
+ 
+  
   try {
     await prisma?.like.delete({
       where: {
         userId_indexId: {
-          userId: session?.user?.id as string,
+          userId: decoded.id as string,
           indexId: indexId as string,
         }
       }

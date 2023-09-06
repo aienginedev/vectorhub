@@ -16,8 +16,7 @@ import {KeySettingsAlertDialog} from "@/components/Sidebar/KeySettingsAlert";
 import {ChatFolder, KeyValuePair, Message, ModelType} from "@/types/chat";
 import {Conversation} from "@/types/conversation";
 import {KeyConfiguration} from "@/types/keyConfiguration";
-import {getSession} from 'next-auth/react';
-import {now} from "next-auth/client/_utils";
+import { verifyJWT } from '@/lib/jwt'; 
 
 interface HomeProps {
   serverSideApiKeyIsSet: boolean;
@@ -626,15 +625,38 @@ const Home: React.FC<HomeProps> = ({serverSideApiKeyIsSet}) => {
 export default Home;
 
 export const getServerSideProps: GetServerSideProps = async (context) => {
-  const session = await getSession(context);
+  console.log("----------------------------------------------------")
+  // Checking environment variables
+  if (!process.env.OPENAI_TYPE || !process.env.JWT_SECRET) {
+    console.error("Environment variables are not properly set.");
+    // You can decide what to do in this situation. Maybe throw an error or redirect to an error page.
+  }
+
+  // Using a more project-specific name for JWT cookie
+  const token = context.req.cookies['jwt_token'] || context.req.headers['authorization'];
+ 
+  let session = null;
+
+  try {
+    if (token) {
+      session = await verifyJWT(token);
+      console.log(session)
+    }
+  } catch (error) {
+    console.error('JWT verification error:', error);
+  }
+
+  console.log(context.req.cookies)
+  
   if (!session) {
     return {
       redirect: {
-        destination: '/api/auth/signin',
+        destination: '/login',
         permanent: false,
-      }
-    }
+      },
+    };
   }
+
   return {
     props: {
       serverSideApiKeyIsSet: !!process.env.OPENAI_TYPE,
@@ -644,6 +666,7 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
         'sidebar',
         'markdown',
       ])),
-    }
+    },
   };
 };
+

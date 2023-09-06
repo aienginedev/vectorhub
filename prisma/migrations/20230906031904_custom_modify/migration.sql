@@ -1,15 +1,4 @@
 -- CreateTable
-CREATE TABLE "Document" (
-    "id" TEXT NOT NULL,
-    "content" TEXT NOT NULL,
-    "namespace" TEXT DEFAULT 'default',
-    "indexId" TEXT NOT NULL,
-    "vector" vector,
-
-    CONSTRAINT "Document_pkey" PRIMARY KEY ("id")
-);
-
--- CreateTable
 CREATE TABLE "Index" (
     "id" TEXT NOT NULL,
     "name" TEXT NOT NULL,
@@ -72,6 +61,7 @@ CREATE TABLE "User" (
     "email" TEXT,
     "emailVerified" TIMESTAMP(3),
     "image" TEXT,
+    "password" TEXT NOT NULL,
 
     CONSTRAINT "User_pkey" PRIMARY KEY ("id")
 );
@@ -85,9 +75,6 @@ CREATE TABLE "VerificationToken" (
 
     CONSTRAINT "VerificationToken_pkey" PRIMARY KEY ("id")
 );
-
--- CreateIndex
-CREATE INDEX "Document_indexId_idx" ON "Document"("indexId");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "Like_user_id_index_id_key" ON "Like"("user_id", "index_id");

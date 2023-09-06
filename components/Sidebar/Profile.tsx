@@ -1,17 +1,43 @@
-import {FC} from "react";
-import {signOut, useSession} from 'next-auth/react';
-import {Avatar, AvatarFallback, AvatarImage} from "@/components/ui/avatar"
-import {Skeleton} from "@/components/ui/skeleton"
-import {Button} from "@/components/ui/button"
+import { FC, useState, useEffect } from "react";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Button } from "@/components/ui/button";
 import Link from "next/link";
-import {DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,} from "@/components/ui/dropdown-menu"
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, } from "@/components/ui/dropdown-menu";
+import { verifyJWT } from '@/lib/jwt';
+import axios from 'axios';
 
 interface Props {
 
 }
 
 export const Profile: FC<Props> = () => {
-  const {data: session, status} = useSession();
+  const [session, setSession] = useState(null);
+  const [status, setStatus] = useState("loading");
+
+
+
+  useEffect(() => {
+    // Assume this API endpoint returns your user information if the token is valid
+    axios.get('/api/userProfile', {
+      headers: {
+        'Authorization': `Bearer ${localStorage.getItem("token")}`
+      }
+    })
+    .then((response) => {
+      setSession(response.data);
+      setStatus('authenticated');
+    })
+    .catch((error) => {
+      setStatus('unauthenticated');
+    });
+  }, []);
+
+  const handleSignOut = () => {
+    localStorage.removeItem("token");
+    setSession(null);
+    setStatus("unauthenticated");
+  };
 
   if (status === 'loading') {
     return (
@@ -45,14 +71,14 @@ export const Profile: FC<Props> = () => {
           <Button variant="ghost">
           <div className="flex items-center justify-between space-x-4">
               <div className="flex items-center space-x-4">
-                <Avatar>
+                {/* <Avatar>
                   <AvatarImage
                     src={session?.user?.image ? session?.user?.image : 'https://avatars.githubusercontent.com/u/138222923'}/>
                   <AvatarFallback>OM</AvatarFallback>
-                </Avatar>
+                </Avatar> */}
                 <div>
-                  <p className="text-md font-medium leading-none">{session?.user?.name}</p>
-                  <p className="text-xs font-medium mt-1">{session?.user?.email}</p>
+                  {/* <p className="text-md font-medium leading-none">{session?.user?.name}</p>
+                  <p className="text-xs font-medium mt-1">{session?.user?.email}</p> */}
                 </div>
               </div>
             </div>
@@ -60,7 +86,7 @@ export const Profile: FC<Props> = () => {
         </DropdownMenuTrigger>
         <DropdownMenuContent className="w-56">
           <DropdownMenuItem>
-            <Button className="w-full" onClick={() => signOut()}>
+          <Button className="w-full" onClick={handleSignOut}>
               Log out
             </Button>
           </DropdownMenuItem>
